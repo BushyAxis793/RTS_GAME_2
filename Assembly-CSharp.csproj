@@ -101,6 +101,7 @@
     <Compile Include="Assets\Asset Store\NatureStarterKit\Standard Assets\Effects\ImageEffects\Scripts\Twirl.cs" />
     <Compile Include="Assets\Asset Store\NatureStarterKit\Standard Assets\Effects\ImageEffects\Scripts\VignetteAndChromaticAberration.cs" />
     <Compile Include="Assets\Asset Store\NatureStarterKit\Standard Assets\Effects\ImageEffects\Scripts\Vortex.cs" />
+    <Compile Include="Assets\Scripts\Unit.cs" />
     <None Include="Assets\Asset Store\NatureStarterKit\Standard Assets\Effects\ImageEffects\Shaders\Tonemapper.shader" />
     <None Include="Assets\Asset Store\NatureStarterKit\info.txt" />
     <None Include="Assets\Asset Store\NatureStarterKit\Standard Assets\Effects\ImageEffects\Shaders\GlobalFog.shader" />
