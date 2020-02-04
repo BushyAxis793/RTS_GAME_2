@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class CameraControl : MonoBehaviour
 {
+
     public float cameraSpeed, zoomSpeed, groundHeight;
     public Vector2 cameraHeightMinMax;
     public Vector2 cameraRotationMinMax;
@@ -18,11 +19,14 @@ public class CameraControl : MonoBehaviour
     new Camera camera;
     Vector2 mousePos, mousePosScreen, keyboardInput, mouseScroll;
     bool isCursorInGameScreen;
+    Rect selectionRect, boxRect;
+    List<Unit> selectedUnits = new List<Unit>();
 
     private void Awake()
     {
         selectionBox = GetComponentInChildren<Image>(true).transform as RectTransform;
         camera = GetComponent<Camera>();
+        selectionBox.gameObject.SetActive(false);
     }
 
     private void Update()
@@ -37,7 +41,7 @@ public class CameraControl : MonoBehaviour
     {
         keyboardInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
         mousePos = Input.mousePosition;
-        mousePosScreen = camera.ScreenToViewportPoint(mousePos);
+        mousePosScreen = camera.ScreenToViewportPoint(mousePos);//pozycja na ekranie w % 0-1
         isCursorInGameScreen = mousePosScreen.x >= 0 && mousePosScreen.x <= 1 &&
             mousePosScreen.y >= 0 && mousePosScreen.y <= 1;
 
@@ -69,14 +73,112 @@ public class CameraControl : MonoBehaviour
 
         var rotation = transform.localEulerAngles;
         rotation.x = Mathf.Lerp(cameraRotationMinMax.y, cameraRotationMinMax.x, zoomLerp);
-        transform.localEulerAngles = rotation; 
+        transform.localEulerAngles = rotation;
 
     }
 
     void UpdateClicks()
     {
+        if (Input.GetMouseButtonDown(0))
+        {
+            selectionBox.gameObject.SetActive(true);
+            selectionRect.position = mousePos;
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            selectionBox.gameObject.SetActive(false);
+        }
+        if (Input.GetMouseButton(0))
+        {
+            selectionRect.size = mousePos - selectionRect.position;
+            boxRect = AbsRect(selectionRect);
+            selectionBox.anchoredPosition = boxRect.position;
+            selectionBox.sizeDelta = selectionRect.size;
+            UpdateSelecting();
+        }
 
-        //selectionBox.anchoredPosition = mousePos;
+        if (Input.GetMouseButtonDown(1))
+        {
+            GiveCommands();
+        }
+
+
     }
+
+
+    void UpdateSelecting()
+    {
+        selectedUnits.Clear();
+        foreach (Unit unit in Unit.SelectableUnits)
+        {
+            if (!unit) continue;
+            var pos = unit.transform.position;
+            var posScreen = camera.WorldToScreenPoint(pos);
+            bool inRect = IsPointInRect(boxRect, posScreen);
+            (unit as ISelectable).SetSelected(inRect);
+            if (inRect)
+            {
+                selectedUnits.Add(unit);
+            }
+        }
+    }
+
+    bool IsPointInRect(Rect rect, Vector2 point)
+    {
+        return point.x >= rect.position.x && point.x <= (rect.position.x + rect.size.x) &&
+            point.y >= rect.position.y && point.y <= (rect.position.y + rect.size.y);
+    }
+
+    Rect AbsRect(Rect rect)
+    {
+        if (rect.width < 0)
+        {
+            rect.x += rect.width;
+            rect.width *= -1;
+        }
+        if (rect.height < 0)
+        {
+            rect.y += rect.height;
+            rect.height *= -1;
+        }
+        return rect;
+    }
+
+    Ray ray;
+    RaycastHit rayHit;
+    [SerializeField]
+    LayerMask commandLayerMask = -1;
+    void GiveCommands()
+    {
+        ray = camera.ViewportPointToRay(mousePosScreen);
+        if (Physics.Raycast(ray, out rayHit,1000,commandLayerMask))
+        {
+            object commandData = null;
+            if (rayHit.collider is TerrainCollider)
+            {
+                //Debug.Log("Terrain: " + rayHit.point.ToString());
+                commandData = rayHit.point;
+
+            }
+            else
+            {
+                //   Debug.Log(rayHit.collider);
+                commandData = rayHit.collider.gameObject.GetComponent<Unit>(); 
+                
+            }
+            GiveCommands(commandData);
+        }
+    }
+
+    void GiveCommands(object dataCommands)
+    {
+        foreach(Unit unit in selectedUnits)
+        {
+            unit.SendMessage("Command", dataCommands, SendMessageOptions.DontRequireReceiver);
+        }
+    }
+
+
+
 }
 
