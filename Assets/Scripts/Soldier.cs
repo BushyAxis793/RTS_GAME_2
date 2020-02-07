@@ -22,25 +22,30 @@ public class Soldier : Unit, ISelectable
         lightEffect = muzzleEffect.GetComponent<Light>();
         impactEffect.transform.SetParent(null);
         EndShootEffect();
+        GameController.SoldierList.Add(this);
     }
 
     public void SetSelected(bool selected)
     {
+        
         healthBar.gameObject.SetActive(selected);
     }
 
     void Command(Vector3 destination)
     {
+        if (!isAlive) return;
         nav.SetDestination(destination);
         task = Task.move;
     }
     void Command(Soldier soldierToFollow)
     {
+        if (!isAlive) return;
         target = soldierToFollow.transform;
         task = Task.follow;
     }
     void Command(Dragon dragonToKill)
     {
+        if (!isAlive) return;
         target = dragonToKill.transform;
         task = Task.chase;
     }
@@ -86,6 +91,13 @@ public class Soldier : Unit, ISelectable
     {
         lightEffect.enabled =false;
         lineEffect.enabled = false;
+       
+    }
+
+    public override void ReceiveDamage(float damage, Vector3 damageDealerPosition)
+    {
+        base.ReceiveDamage(damage, damageDealerPosition);
+        animator.SetTrigger("Get Hit");
     }
 
 

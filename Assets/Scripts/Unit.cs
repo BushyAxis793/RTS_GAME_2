@@ -42,7 +42,7 @@ public class Unit : MonoBehaviour
     protected NavMeshAgent nav;
     float attackTimer;
 
-    Animator animator;
+    protected Animator animator;
 
     protected Task task = Task.idle;
 
@@ -81,6 +81,16 @@ public class Unit : MonoBehaviour
                 case Task.attack: Attacking(); break;
             }
         Animate();
+    }
+
+    protected virtual void OnTriggerEnter(Collider other)
+    {
+
+    }
+
+    protected virtual void OnTriggerExit(Collider other)
+    {
+
     }
 
     protected virtual void Idling()
@@ -128,7 +138,7 @@ public class Unit : MonoBehaviour
         {
             nav.velocity = Vector3.zero;
             transform.LookAt(target);
-            float distance = Vector3.Magnitude(nav.destination - transform.position);
+            float distance = Vector3.Magnitude(target.position - transform.position);
             if (distance <= attackDistance)
             {
                 if ((attackTimer -= Time.deltaTime) <= 0)
@@ -155,8 +165,20 @@ public class Unit : MonoBehaviour
 
     public virtual void Attack()
     {
-        animator.SetTrigger(ANIMATOR_ATTACK);
-        attackTimer = attackCooldown;
+        Unit unit = target.GetComponent<Unit>();
+        if (unit && unit.isAlive)
+        {
+
+            animator.SetTrigger(ANIMATOR_ATTACK);
+            attackTimer = attackCooldown;
+
+        }
+        else
+        {
+            target = null;
+
+        }
+
     }
 
     public virtual void DealDamage()
@@ -166,14 +188,31 @@ public class Unit : MonoBehaviour
             Unit unit = target.GetComponent<Unit>();
             if (unit && isAlive)
             {
-                unit.hp -= attackDamage;
+                unit.ReceiveDamage(attackDamage, transform.position);
 
             }
-            else
+           
+        }
+    }
+
+    public virtual void ReceiveDamage(float damage, Vector3 damageDealerPosition)
+    {
+        if (isAlive)
+        {
+
+            hp -= damage;
+        }
+        if (!isAlive)//died
+        {
+            healthBar.gameObject.SetActive(false);
+            enabled = false;
+            nav.enabled = false;
+            foreach (var collider in GetComponents<Collider>())
             {
-                target = null;
-
+                collider.enabled = false;
+                if (this is ISelectable) selectableUnits.Remove(this as ISelectable);
             }
+            Animate();
         }
     }
 

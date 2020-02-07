@@ -5,38 +5,37 @@ using UnityEngine.UI;
 
 public class HealthBar : MonoBehaviour
 {
-    const string HP_CANVAS = "HP Canvas";
+    const string WORLD_CANVAS = "World Canvas";
 
     [SerializeField]
     Vector3 offset;
 
     Slider slider;
     Unit unit;
-    Transform cameraTransform;
+    Transform parent;
+    
 
     private void Awake()
     {
         slider = GetComponent<Slider>();
+        parent = transform.parent;
         unit = GetComponentInParent<Unit>();
-        var canvas = GameObject.FindGameObjectWithTag(HP_CANVAS);
+        var canvas = GameObject.FindGameObjectWithTag(WORLD_CANVAS);
         if (canvas) transform.SetParent(canvas.transform);
-        cameraTransform = Camera.main.transform;
+        
     }
 
     private void Update()
     {
-        if (!unit)
+        if (!parent)
         {
             Destroy(gameObject);
             return;
         }
-
+        if (unit)
         slider.value = unit.HealthPercent;
-        transform.position = unit.transform.position + offset;
-        transform.LookAt(cameraTransform);
-        var rotation = transform.localEulerAngles;
-        rotation.y = 180;
-        transform.localEulerAngles = rotation;
+        transform.position = parent.position + offset;
+
     }
 
 
